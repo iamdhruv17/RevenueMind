@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id                String   @id @default(cuid())
+  name              String
+  email             String?  @unique
+  phone             String?
+  preferredLanguage String   @default("en")
+  createdAt         DateTime @default(now())
+
+  historyStats      CustomerHistoryStats?
+  transactions      Transaction[]
+  checkoutSessions  CheckoutSession[]
+  invoices          Invoice[]
+  revenueRiskEvents RevenueRiskEvent[]
+  interventions     Intervention[]
+}
+
+model CustomerHistoryStats {
+  id                      String   @id @default(cuid())
+  customerId              String   @unique
+  customer                Customer @relation(fields: [customerId], references: [id])
+  totalPayments           Int      @default(0)
+  successfulPayments      Int      @default(0)
+  failedPayments          Int      @default(0)
+  previousAbandonments    Int      @default(0)
+  previousRecoveries      Int      @default(0)
+  avgReminderResponseDays Float?
+  recoveryPropensityScore Float?
+  updatedAt               DateTime @updatedAt
+}
+
+model Transaction {
+  id                String   @id @default(cuid())
+  customerId        String
+  customer          Customer @relation(fields: [customerId], references: [id])
+  amount            Float
+  status            String   // "success" | "failed" | "pending"
+  paymentMethod     String?
+  type              String   // "one_time" | "subscription" | "mandate"
+  failureReasonCode String?
+  createdAt         DateTime @default(now())
+}
+
+model CheckoutSession {
+  id                String   @id @default(cuid())
+  customerId        String
+  customer          Customer @relation(fields: [customerId], references: [id])
+  cartValue         Float
+  timeOnCheckoutSec Int?
+  abandoned         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id])
+  amount        Float
+  dueDate       DateTime
+  status        String   // "paid" | "overdue"
+  lateFeeAmount Float?
+  createdAt     DateTime @default(now())
+}
+
+model RevenueRiskEvent {
+  id           String   @id @default(cuid())
+  sourceType   String   // "transaction" | "checkout" | "invoice" | "subscription"
+  sourceId     String
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id])
+  amountAtRisk Float
+  detectedAt   DateTime @default(now())
+
+  rootCause     RootCauseAnalysis?
+  interventions Intervention[]
+}
+
+model RootCauseAnalysis {
+  id                  String           @id @default(cuid())
+  revenueRiskEventId  String           @unique
+  revenueRiskEvent    RevenueRiskEvent @relation(fields: [revenueRiskEventId], references: [id])
+  predictedReason     String
+  confidence          Float
+  purchaseIntentScore Float
+  signalsUsed         Json?
+  createdAt           DateTime @default(now())
+}
+
+model Intervention {
+  id                          String           @id @default(cuid())
+  revenueRiskEventId          String
+  revenueRiskEvent            RevenueRiskEvent @relation(fields: [revenueRiskEventId], references: [id])
+  customerId                  String
+  customer                    Customer @relation(fields: [customerId], references: [id])
+  actionType                  String   // "retry" | "reminder" | "discount" | "waiver" | "escalation" | "voice"
+  cost                        Float
+  expectedRecoveryProbability Float
+  expectedRecoveredRevenue    Float
+  messageText                 String?
+  channel                     String?
+  language                    String?
+  status                      String   @default("pending")
+  createdAt                   DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  action     String
+  actor      String
+  details    Json?
+  timestamp  DateTime @default(now())
+}
+
+model PolicyRule {
+  id          String  @id @default(cuid())
+  ruleName    String  @unique
+  maxValue    Float
+  description String?
+}
+
+model BudgetAllocation {
+  id             String   @id @default(cuid())
+  periodStart    DateTime
+  periodEnd      DateTime
+  totalBudget    Float
+  allocatedSoFar Float    @default(0)
+}
