@@ -1,18 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [runningPipeline, setRunningPipeline] = useState(false);
 
-  const [summary, setSummary] = useState<any>(null);
-  const [riskEvents, setRiskEvents] = useState<any[]>([]);
-  const [interventions, setInterventions] = useState<any[]>([]);
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
+  const [riskEvents, setRiskEvents] = useState<Record<string, unknown>[]>([]);
+  const [interventions, setInterventions] = useState<Record<string, unknown>[]>([]);
+  const [auditLogs, setAuditLogs] = useState<Record<string, unknown>[]>([]);
 
   const fetchData = async () => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     try {
       const [sumRes, riskRes, intRes, auditRes] = await Promise.all([

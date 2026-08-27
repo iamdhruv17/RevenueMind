@@ -45,7 +45,7 @@ export async function GET() {
     const riskBySourceType = { transaction: 0, checkout: 0, invoice: 0 };
     sourceTypeGroups.forEach(g => {
       if (g.sourceType in riskBySourceType) {
-        // @ts-ignore
+        // @ts-expect-error - indexing object with string
         riskBySourceType[g.sourceType] += g._sum.amountAtRisk || 0;
       }
     });
@@ -84,7 +84,7 @@ export async function GET() {
         }
       } else {
         if (inv.actionType in interventionsByAction) {
-          // @ts-ignore
+          // @ts-expect-error - indexing object with string
           interventionsByAction[inv.actionType]++;
         }
       }

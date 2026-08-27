@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
           where: { entityType: 'Intervention', entityId: inv.id, action: 'capped_and_escalated' }
         });
         if (auditLog && auditLog.details && typeof auditLog.details === 'object' && 'violatedRule' in auditLog.details) {
-          violatedRule = (auditLog.details as any).violatedRule;
+          violatedRule = (auditLog.details as Record<string, unknown>).violatedRule;
         }
       }
 
