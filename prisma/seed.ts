@@ -29,10 +29,10 @@ function pickRandom<T>(arr: T[]): T {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const CUSTOMER_COUNT = 10;
-const TRANSACTION_COUNT = 20;
-const CHECKOUT_COUNT = 15;
-const INVOICE_COUNT = 8;
+const CUSTOMER_COUNT = 200;
+const TRANSACTION_COUNT = 500;
+const CHECKOUT_COUNT = 150;
+const INVOICE_COUNT = 80;
 
 const LANGUAGES = [
   { value: 'en', weight: 50 },
