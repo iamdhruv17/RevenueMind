@@ -41,7 +41,10 @@ export async function GET(req: NextRequest) {
         customerName: inv.customer.name,
         amountAtRisk: inv.revenueRiskEvent.amountAtRisk,
         sourceType: inv.revenueRiskEvent.sourceType,
-        violatedRule
+        violatedRule,
+        messageText: inv.messageText,
+        language: inv.language,
+        channel: inv.channel
       };
     }));
 

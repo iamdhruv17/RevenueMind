@@ -28,6 +28,7 @@ interface InterventionRow {
   id: string; actionType: string; status: string; cost: number;
   expectedRecoveredRevenue: number; createdAt: string; customerName: string;
   amountAtRisk: number; sourceType: string; violatedRule: string[] | string | null;
+  messageText?: string | null; language?: string | null; channel?: string | null;
 }
 
 interface AuditLogRow {
@@ -38,6 +39,7 @@ interface AuditLogRow {
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [runningPipeline, setRunningPipeline] = useState(false);
+  const [generatingMessages, setGeneratingMessages] = useState(false);
 
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [riskEvents, setRiskEvents] = useState<RiskEventRow[]>([]);
@@ -84,6 +86,18 @@ export default function Dashboard() {
       console.error(err);
     } finally {
       setRunningPipeline(false);
+    }
+  };
+
+  const generateMessages = async () => {
+    setGeneratingMessages(true);
+    try {
+      await fetch('/api/agents/generate-messages', { method: 'POST' });
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setGeneratingMessages(false);
     }
   };
 
@@ -148,13 +162,22 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold tracking-tight">Revenue Recovery Command Center</h1>
             <p className="text-gray-500 mt-1">AI-powered recovery operations and monitoring</p>
           </div>
-          <button
-            onClick={runPipeline}
-            disabled={runningPipeline}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm disabled:opacity-50 transition-colors"
-          >
-            {runningPipeline ? 'Running Pipeline...' : 'Run Recovery Pipeline'}
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={generateMessages}
+              disabled={generatingMessages || runningPipeline}
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-sm disabled:opacity-50 transition-colors"
+            >
+              {generatingMessages ? 'Generating...' : 'Generate Messages'}
+            </button>
+            <button
+              onClick={runPipeline}
+              disabled={runningPipeline || generatingMessages}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm disabled:opacity-50 transition-colors"
+            >
+              {runningPipeline ? 'Running Pipeline...' : 'Run Recovery Pipeline'}
+            </button>
+          </div>
         </div>
 
         {summary && (
@@ -235,6 +258,35 @@ export default function Dashboard() {
             </div>
           </>
         )}
+
+        {/* Sample Recovery Messages */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100 bg-purple-50/50">
+            <h2 className="text-lg font-semibold text-purple-800">Sample Recovery Messages</h2>
+            <p className="text-sm text-purple-600 mt-1">Personalized, multilingual messages generated for customers.</p>
+          </div>
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {interventions.filter(i => i.messageText).slice(0, 6).length === 0 ? (
+              <div className="col-span-full text-center text-gray-400 py-8">
+                No messages generated yet. Click "Generate Messages" to create them.
+              </div>
+            ) : (
+              interventions.filter(i => i.messageText).slice(0, 6).map(inv => (
+                <div key={inv.id} className="bg-gray-50 rounded-2xl p-5 border border-gray-100 shadow-sm relative">
+                  <div className="absolute top-4 right-4 bg-white px-2 py-1 rounded text-xs font-semibold text-gray-500 uppercase border border-gray-200">
+                    {inv.language}
+                  </div>
+                  <div className="font-semibold text-gray-900">{inv.customerName}</div>
+                  <div className="text-xs text-gray-500 mb-3 capitalize">{inv.actionType} • {inv.channel}</div>
+                  <div className="bg-white p-3 rounded-xl text-gray-700 text-sm italic border border-gray-200 relative">
+                    <div className="absolute -left-2 top-4 w-4 h-4 bg-white border-l border-b border-gray-200 transform rotate-45"></div>
+                    <span className="relative z-10">"{inv.messageText}"</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
 
         {/* Guardrail Escalation Review Panel */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
