@@ -3,14 +3,46 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
+interface SummaryData {
+  revenueAtRisk: number;
+  expectedRecoverable: number;
+  recoveryRatePct: number;
+  customersAtRisk: number;
+  budgetTotal: number;
+  budgetAllocated: number;
+  budgetRemaining: number;
+  riskBySourceType: { transaction: number; checkout: number; invoice: number };
+  interventionsByAction: {
+    reminder: number; retry: number; discount_5: number; discount_10: number;
+    waiver: number; escalation_economic: number; escalation_guardrail: number;
+  };
+  pendingHumanApprovalCount: number;
+}
+
+interface RiskEventRow {
+  id: string; customerName: string; sourceType: string; amountAtRisk: number;
+  predictedReason: string | null; confidence: number | null; detectedAt: string;
+}
+
+interface InterventionRow {
+  id: string; actionType: string; status: string; cost: number;
+  expectedRecoveredRevenue: number; createdAt: string; customerName: string;
+  amountAtRisk: number; sourceType: string; violatedRule: string[] | string | null;
+}
+
+interface AuditLogRow {
+  id: string; timestamp: string; actor: string; action: string;
+  entityType: string; entityId: string;
+}
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [runningPipeline, setRunningPipeline] = useState(false);
 
-  const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
-  const [riskEvents, setRiskEvents] = useState<Record<string, unknown>[]>([]);
-  const [interventions, setInterventions] = useState<Record<string, unknown>[]>([]);
-  const [auditLogs, setAuditLogs] = useState<Record<string, unknown>[]>([]);
+  const [summary, setSummary] = useState<SummaryData | null>(null);
+  const [riskEvents, setRiskEvents] = useState<RiskEventRow[]>([]);
+  const [interventions, setInterventions] = useState<InterventionRow[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
 
   const fetchData = async () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
