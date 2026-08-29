@@ -20,32 +20,43 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    const data = await Promise.all(interventions.map(async (inv) => {
-      let violatedRule = null;
-      if (inv.status === 'pending_human_approval') {
-        const auditLog = await prisma.auditLog.findFirst({
-          where: { entityType: 'Intervention', entityId: inv.id, action: 'capped_and_escalated' }
-        });
-        if (auditLog && auditLog.details && typeof auditLog.details === 'object' && 'violatedRule' in auditLog.details) {
-          violatedRule = (auditLog.details as Record<string, unknown>).violatedRule;
-        }
-      }
+    // Batch fetch violated rules for pending_human_approval interventions
+    const pendingIds = interventions
+      .filter(i => i.status === 'pending_human_approval')
+      .map(i => i.id);
 
-      return {
-        id: inv.id,
-        actionType: inv.actionType,
-        status: inv.status,
-        cost: inv.cost,
-        expectedRecoveredRevenue: inv.expectedRecoveredRevenue,
-        createdAt: inv.createdAt,
-        customerName: inv.customer.name,
-        amountAtRisk: inv.revenueRiskEvent.amountAtRisk,
-        sourceType: inv.revenueRiskEvent.sourceType,
-        violatedRule,
-        messageText: inv.messageText,
-        language: inv.language,
-        channel: inv.channel
-      };
+    const auditLogs = pendingIds.length > 0
+      ? await prisma.auditLog.findMany({
+          where: {
+            entityType: 'Intervention',
+            entityId: { in: pendingIds },
+            action: 'capped_and_escalated'
+          },
+          select: { entityId: true, details: true }
+        })
+      : [];
+
+    const violatedRuleMap = new Map<string, unknown>();
+    for (const log of auditLogs) {
+      if (log.details && typeof log.details === 'object' && 'violatedRule' in log.details) {
+        violatedRuleMap.set(log.entityId, (log.details as Record<string, unknown>).violatedRule);
+      }
+    }
+
+    const data = interventions.map(inv => ({
+      id: inv.id,
+      actionType: inv.actionType,
+      status: inv.status,
+      cost: inv.cost,
+      expectedRecoveredRevenue: inv.expectedRecoveredRevenue,
+      createdAt: inv.createdAt,
+      customerName: inv.customer.name,
+      amountAtRisk: inv.revenueRiskEvent.amountAtRisk,
+      sourceType: inv.revenueRiskEvent.sourceType,
+      violatedRule: violatedRuleMap.get(inv.id) || null,
+      messageText: inv.messageText,
+      language: inv.language,
+      channel: inv.channel
     }));
 
     return NextResponse.json(data);

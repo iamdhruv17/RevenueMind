@@ -11,10 +11,10 @@ export async function GET() {
     const revenueAtRisk = riskEvents._sum.amountAtRisk || 0;
 
     // expectedRecoverable
-    const interventions = await prisma.intervention.aggregate({
+    const interventionsAgg = await prisma.intervention.aggregate({
       _sum: { expectedRecoveredRevenue: true }
     });
-    const expectedRecoverable = interventions._sum.expectedRecoveredRevenue || 0;
+    const expectedRecoverable = interventionsAgg._sum.expectedRecoveredRevenue || 0;
 
     // recoveryRatePct
     const recoveryRatePct = revenueAtRisk > 0 ? (expectedRecoverable / revenueAtRisk) * 100 : 0;
@@ -50,43 +50,49 @@ export async function GET() {
       }
     });
 
-    // interventionsByAction
-    const interventionsList = await prisma.intervention.findMany({
-      include: {
-        // Need to check audit logs to distinguish escalation types
-      }
+    // interventionsByAction — batch approach instead of N+1
+    const actionGroups = await prisma.intervention.groupBy({
+      by: ['actionType'],
+      _count: { id: true }
     });
 
-    const interventionsByAction = {
-      reminder: 0, retry: 0, discount_5: 0, discount_10: 0, waiver: 0, escalation_economic: 0, escalation_guardrail: 0
-    };
+    const pendingHumanApprovalCount = await prisma.intervention.count({
+      where: { status: 'pending_human_approval' }
+    });
 
-    let pendingHumanApprovalCount = 0;
+    // Get escalation IDs to classify them
+    const escalationInterventions = await prisma.intervention.findMany({
+      where: { actionType: 'escalation' },
+      select: { id: true }
+    });
+    const escalationIds = escalationInterventions.map(e => e.id);
 
-    for (const inv of interventionsList) {
-      if (inv.status === 'pending_human_approval') {
-        pendingHumanApprovalCount++;
-      }
-
-      if (inv.actionType === 'escalation') {
-        // Find if this escalation has a guardrail audit log
-        const guardrailLog = await prisma.auditLog.findFirst({
+    // Single query to find all guardrail audit logs for escalations
+    const guardrailLogs = escalationIds.length > 0
+      ? await prisma.auditLog.findMany({
           where: {
             entityType: 'Intervention',
-            entityId: inv.id,
+            entityId: { in: escalationIds },
             action: 'capped_and_escalated'
-          }
-        });
-        if (guardrailLog) {
-          interventionsByAction.escalation_guardrail++;
-        } else {
-          interventionsByAction.escalation_economic++;
-        }
-      } else {
-        if (inv.actionType in interventionsByAction) {
-          // @ts-expect-error - indexing object with string
-          interventionsByAction[inv.actionType]++;
-        }
+          },
+          select: { entityId: true }
+        })
+      : [];
+    const guardrailEntityIds = new Set(guardrailLogs.map(l => l.entityId));
+
+    const interventionsByAction = {
+      reminder: 0, retry: 0, discount_5: 0, discount_10: 0,
+      waiver: 0, escalation_economic: 0, escalation_guardrail: 0
+    };
+
+    for (const g of actionGroups) {
+      if (g.actionType === 'escalation') {
+        // Split escalations into guardrail vs economic
+        interventionsByAction.escalation_guardrail = guardrailEntityIds.size;
+        interventionsByAction.escalation_economic = g._count.id - guardrailEntityIds.size;
+      } else if (g.actionType in interventionsByAction) {
+        // @ts-expect-error - indexing object with string
+        interventionsByAction[g.actionType] = g._count.id;
       }
     }
 
