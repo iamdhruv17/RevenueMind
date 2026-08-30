@@ -1,4 +1,4 @@
-﻿/**
+/**
  * POST /api/agents/run-pipeline
  *
  * Orchestrator that runs the full recovery pipeline in order:
@@ -17,6 +17,9 @@ import { computePropensityScores } from '@/lib/agents/propensityScore';
 import { runRootCauseAnalysis } from '@/lib/agents/rootCause';
 import { runRecoveryStrategyAndAllocate } from '@/lib/agents/recoveryStrategy';
 import { runGuardrails } from '@/lib/agents/guardrails';
+
+// Vercel Hobby plan max: 60s. Safety net for runs with real work.
+export const maxDuration = 60;
 
 export async function POST() {
   try {

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Customer Behavior Agent
  *
  * Computes a recoveryPropensityScore [0-100] for each CustomerHistoryStats row.
@@ -12,48 +12,41 @@
  *
  *   score = round(100 * (0.5 * successRate + 0.3 * recoveryRate + 0.2 * responsiveness))
  *
+ * Uses a single raw SQL UPDATE to compute and set all scores in one round-trip.
+ *
  * NOTE: recoveryPropensityScore is INTERNAL-ONLY -- never expose it in
  * customer-facing API responses.
  */
 
 import { prisma } from '@/lib/db/prisma';
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
 export async function computePropensityScores(): Promise<{ updated: number }> {
-  const allStats = await prisma.customerHistoryStats.findMany();
-
-  let updated = 0;
-
-  for (const stats of allStats) {
-    const successRate =
-      stats.totalPayments > 0
-        ? stats.successfulPayments / stats.totalPayments
-        : 0.5;
-
-    const recoveryRate = Math.min(
-      stats.previousRecoveries / Math.max(stats.previousAbandonments, 1),
-      1
-    );
-
-    const responsiveness =
-      stats.avgReminderResponseDays == null
-        ? 0.5
-        : clamp(1 - stats.avgReminderResponseDays / 10, 0, 1);
-
-    const propensityScore = Math.round(
-      100 * (0.5 * successRate + 0.3 * recoveryRate + 0.2 * responsiveness)
-    );
-
-    await prisma.customerHistoryStats.update({
-      where: { id: stats.id },
-      data: { recoveryPropensityScore: propensityScore },
-    });
-
-    updated++;
-  }
+  // Single SQL statement computes and updates all scores in one round-trip.
+  // The formula is evaluated entirely in Postgres, avoiding N individual UPDATE queries.
+  const result = await prisma.$executeRaw`
+    UPDATE "CustomerHistoryStats"
+    SET "recoveryPropensityScore" = ROUND(
+      100 * (
+        0.5 * (
+          CASE WHEN "totalPayments" > 0
+               THEN "successfulPayments"::float / "totalPayments"
+               ELSE 0.5
+          END
+        )
+        + 0.3 * LEAST(
+          "previousRecoveries"::float / GREATEST("previousAbandonments", 1),
+          1
+        )
+        + 0.2 * (
+          CASE WHEN "avgReminderResponseDays" IS NULL
+               THEN 0.5
+               ELSE GREATEST(0, LEAST(1, 1.0 - "avgReminderResponseDays" / 10.0))
+          END
+        )
+      )
+    ),
+    "updatedAt" = NOW()
+  `;
 
   // Single AuditLog summary entry for the batch run
   await prisma.auditLog.create({
@@ -62,9 +55,9 @@ export async function computePropensityScores(): Promise<{ updated: number }> {
       entityId: 'batch',
       action: 'propensity_scores_updated',
       actor: 'CustomerBehaviorAgent',
-      details: { updatedCount: updated },
+      details: { updatedCount: result },
     },
   });
 
-  return { updated };
+  return { updated: result };
 }

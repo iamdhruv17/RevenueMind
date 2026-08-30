@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Guardrails Agent
  *
  * Validates every pending Intervention against PolicyRule limits:
@@ -29,6 +29,39 @@ export async function runGuardrails(): Promise<{ escalated: number }> {
     },
   });
 
+  // Early exit: nothing to check
+  if (pendingInterventions.length === 0) {
+    return { escalated: 0 };
+  }
+
+  // ── Batch: contact counts per customer (last 30 days) ─────────────────────
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const contactCountGroups = await prisma.intervention.groupBy({
+    by: ['customerId'],
+    where: {
+      createdAt: { gte: thirtyDaysAgo },
+    },
+    _count: { id: true },
+  });
+  const contactCountMap = new Map(
+    contactCountGroups.map((g) => [g.customerId, g._count.id])
+  );
+
+  // ── Batch: fetch invoices for waiver checks ───────────────────────────────
+  const waiverInterventions = pendingInterventions.filter(
+    (i) => i.actionType === 'waiver'
+  );
+  const invoiceSourceIds = waiverInterventions.map(
+    (i) => i.revenueRiskEvent.sourceId
+  );
+  const invoices = invoiceSourceIds.length > 0
+    ? await prisma.invoice.findMany({
+        where: { id: { in: invoiceSourceIds } },
+        select: { id: true, lateFeeAmount: true },
+      })
+    : [];
+  const invoiceMap = new Map(invoices.map((inv) => [inv.id, inv]));
+
   let escalated = 0;
 
   for (const intervention of pendingInterventions) {
@@ -51,9 +84,7 @@ export async function runGuardrails(): Promise<{ escalated: number }> {
 
     // ── Check max_waiver_pct ─────────────────────────────────────────────────
     if (intervention.actionType === 'waiver') {
-      const invoice = await prisma.invoice.findUnique({
-        where: { id: intervention.revenueRiskEvent.sourceId },
-      });
+      const invoice = invoiceMap.get(intervention.revenueRiskEvent.sourceId);
       const maxWaiverAmount = (invoice?.lateFeeAmount ?? 0) * (maxWaiverPct / 100);
       if (intervention.cost > maxWaiverAmount) {
         violations.push(
@@ -62,15 +93,10 @@ export async function runGuardrails(): Promise<{ escalated: number }> {
       }
     }
 
-    // ── Check max_contacts ───────────────────────────────────────────────────
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const recentContactCount = await prisma.intervention.count({
-      where: {
-        customerId: intervention.customerId,
-        createdAt: { gte: thirtyDaysAgo },
-        id: { not: intervention.id }, // exclude the current one
-      },
-    });
+    // ── Check max_contacts (from pre-fetched map) ───────────────────────────
+    // Total count includes this intervention, so subtract 1 to exclude self
+    const totalCountIncludingSelf = contactCountMap.get(intervention.customerId) ?? 0;
+    const recentContactCount = Math.max(0, totalCountIncludingSelf - 1);
 
     if (recentContactCount >= maxContacts) {
       violations.push(

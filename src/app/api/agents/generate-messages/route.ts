@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { generateMessagesForInterventions } from "@/lib/agents/messagingAgent";
 
+// Vercel Hobby plan max: 60s. Safety net for Gemini API calls.
+export const maxDuration = 60;
 export async function POST() {
   try {
     const result = await generateMessagesForInterventions();
