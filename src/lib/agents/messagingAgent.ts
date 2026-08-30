@@ -9,10 +9,12 @@ export async function generateMessagesForInterventions(): Promise<{ generated: n
   // IMPORTANT: We only process 'pending' (autonomously approved) and NOT 'pending_human_approval'
   const eligibleInterventions = await prisma.intervention.findMany({
     where: {
-      status: "pending",
+      status: {
+        in: ["pending", "approved"]
+      },
       messageText: null,
       actionType: {
-        in: ["reminder", "retry", "discount_5", "discount_10", "waiver"] // Ensure only these types are picked up
+        in: ["reminder", "retry", "discount_5", "discount_10", "waiver", "escalation"] // Ensure only these types are picked up
       }
     },
     include: {
@@ -28,10 +30,12 @@ export async function generateMessagesForInterventions(): Promise<{ generated: n
 
   const totalEligibleCount = await prisma.intervention.count({
     where: {
-      status: "pending",
+      status: {
+        in: ["pending", "approved"]
+      },
       messageText: null,
       actionType: {
-        in: ["reminder", "retry", "discount_5", "discount_10", "waiver"]
+        in: ["reminder", "retry", "discount_5", "discount_10", "waiver", "escalation"]
       }
     }
   });

@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db/prisma';
 
 export async function updateActionPerformanceStats(): Promise<{ updated: number }> {
   const interventions = await prisma.intervention.findMany({

@@ -34,6 +34,11 @@ const FALLBACK_TEMPLATES: Record<string, Record<string, (name: string, amt: numb
     hi: (name, amt, cost) => `नमस्ते ${name}, आपके ₹${amt} के चालान पर ₹${cost} का विलंब शुल्क माफ कर दिया गया है। कृपया मूल राशि का भुगतान पूरा करें।`,
     hinglish: (name, amt, cost) => `Hi ${name}, aapke ₹${amt} ke overdue invoice par ₹${cost} ka late fee waive kar diya gaya hai. Please principal amount pay kar dein.`,
   },
+  escalation: {
+    en: (name, amt) => `Hi ${name}, this is an urgent notice regarding your significantly overdue payment of ₹${amt}. Please clear your dues immediately to avoid service interruption.`,
+    hi: (name, amt) => `नमस्ते ${name}, यह आपके ₹${amt} के अतिदेय भुगतान के संबंध में एक तत्काल सूचना है। सेवाओं में बाधा से बचने के लिए कृपया तुरंत अपना बकाया चुकाएं।`,
+    hinglish: (name, amt) => `Hi ${name}, aapke ₹${amt} ke overdue payment ke regarding ye urgent notice hai. Service interruption se bachne ke liye please apna due turant clear karein.`,
+  },
 };
 
 export function getFallbackMessage(input: MessageGenerationInput): string {
@@ -65,6 +70,7 @@ Action-specific Guidelines:
 - 'reminder': A gentle nudge about their pending payment of ₹${input.amountAtRisk}, without pressure.
 - 'discount_5' / 'discount_10': Mention a limited-time 5% or 10% discount on their cart/order of ₹${input.amountAtRisk} to help them complete their purchase.
 - 'waiver': Specifically for overdue invoices with late fees. Explain that we understand cash flow challenges and have waived the late fee of ₹${input.cost} as a courtesy. Invite them to clear the principal invoice amount of ₹${input.amountAtRisk}. Do NOT mention technical glitches or payment gateway errors for waivers.
+- 'escalation': An urgent but professional notice about a significantly overdue payment of ₹${input.amountAtRisk}. Mention that they need to clear their dues immediately to avoid service interruption.
 
 Context Provided:
 - Source Type: ${input.sourceType}
