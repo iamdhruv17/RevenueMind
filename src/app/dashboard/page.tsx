@@ -36,10 +36,25 @@ interface AuditLogRow {
   entityType: string; entityId: string;
 }
 
+interface LearningStats {
+  stats: {
+    id: string;
+    actionType: string;
+    observedSuccessRate: number;
+    sampleSize: number;
+    originalHeuristicAvg: number;
+  }[];
+  overallPredictedAvg: number;
+  overallObservedAvg: number;
+  totalSimulated: number;
+}
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [runningPipeline, setRunningPipeline] = useState(false);
   const [generatingMessages, setGeneratingMessages] = useState(false);
+  const [simulating, setSimulating] = useState(false);
+  const [learningStats, setLearningStats] = useState<LearningStats | null>(null);
 
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [riskEvents, setRiskEvents] = useState<RiskEventRow[]>([]);
@@ -50,22 +65,25 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     try {
-      const [sumRes, riskRes, intRes, auditRes] = await Promise.all([
+      const [sumRes, riskRes, intRes, auditRes, learningRes] = await Promise.all([
         fetch('/api/dashboard/summary'),
         fetch('/api/dashboard/risk-events'),
         fetch('/api/dashboard/interventions?status=pending|pending_human_approval'),
-        fetch('/api/dashboard/audit-log')
+        fetch('/api/dashboard/audit-log'),
+        fetch('/api/dashboard/learning-stats')
       ]);
 
       const sumData = await sumRes.json();
       const riskData = await riskRes.json();
       const intData = await intRes.json();
       const auditData = await auditRes.json();
+      const learningData = await learningRes.json();
 
       setSummary(sumData);
       setRiskEvents(riskData);
       setInterventions(intData);
       setAuditLogs(auditData);
+      setLearningStats(learningData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -98,6 +116,18 @@ export default function Dashboard() {
       console.error(err);
     } finally {
       setGeneratingMessages(false);
+    }
+  };
+
+  const simulateOutcomes = async () => {
+    setSimulating(true);
+    try {
+      await fetch('/api/agents/simulate-outcomes', { method: 'POST' });
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSimulating(false);
     }
   };
 
@@ -257,6 +287,68 @@ export default function Dashboard() {
               </div>
             </div>
           </>
+        )}
+
+        {/* Learning & Outcomes (Simulated) */}
+        {learningStats && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
+              <div>
+                <h2 className="text-lg font-semibold text-blue-800">Learning & Outcomes (Simulated)</h2>
+                <p className="text-sm text-blue-600 mt-1">
+                  Overall predicted recovery probability: <span className="font-bold">{(learningStats.overallPredictedAvg * 100).toFixed(1)}%</span> vs. 
+                  Observed actual recovery rate: <span className="font-bold">{(learningStats.overallObservedAvg * 100).toFixed(1)}%</span>
+                  <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Based on {learningStats.totalSimulated} outcomes</span>
+                </p>
+              </div>
+              <button
+                onClick={simulateOutcomes}
+                disabled={simulating}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded shadow-sm disabled:opacity-50 transition-colors"
+              >
+                {simulating ? 'Simulating...' : 'Simulate Outcomes'}
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3">Action Type</th>
+                    <th className="px-6 py-3">Original Heuristic</th>
+                    <th className="px-6 py-3">Observed Rate</th>
+                    <th className="px-6 py-3">Sample Size</th>
+                    <th className="px-6 py-3">Delta</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {learningStats.stats.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-gray-400">No simulated outcomes yet. Click "Simulate Outcomes" to generate data.</td>
+                    </tr>
+                  ) : (
+                    learningStats.stats.map(stat => {
+                      const delta = stat.observedSuccessRate - stat.originalHeuristicAvg;
+                      const isPositive = delta > 0.01;
+                      const isNegative = delta < -0.01;
+                      return (
+                        <tr key={stat.id} className="border-b last:border-0 hover:bg-gray-50">
+                          <td className="px-6 py-4 font-medium capitalize">{stat.actionType.replace('_', ' ')}</td>
+                          <td className="px-6 py-4">{(stat.originalHeuristicAvg * 100).toFixed(1)}%</td>
+                          <td className="px-6 py-4 font-bold">{(stat.observedSuccessRate * 100).toFixed(1)}%</td>
+                          <td className="px-6 py-4 text-gray-500">{stat.sampleSize}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${isPositive ? 'bg-green-100 text-green-800' : isNegative ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
+                              {delta > 0 ? '+' : ''}{(delta * 100).toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
 
         {/* Sample Recovery Messages */}

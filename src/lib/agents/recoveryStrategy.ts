@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Recovery Strategy Agent + Batch Budget Allocator
  *
  * For every RevenueRiskEvent with a RootCauseAnalysis but no Intervention yet:
@@ -47,6 +47,9 @@ export async function runRecoveryStrategyAndAllocate(): Promise<{
       },
     },
   });
+
+  const stats = await prisma.actionPerformanceStats.findMany();
+  const statsMap = new Map(stats.map(s => [s.actionType, s]));
 
   const freeCandidates: CandidateAction[] = [];
   const paidCandidates: CandidateAction[] = [];
@@ -108,11 +111,17 @@ export async function runRecoveryStrategyAndAllocate(): Promise<{
 
     // Compute adjusted metrics for each eligible action
     const scored = eligibleActions.map((action) => {
-      const adjustedProb = action.baseProb * (0.5 + 0.5 * p);
+      let blendedBaseProb = action.baseProb;
+      const stat = statsMap.get(action.actionType);
+      if (stat && stat.sampleSize >= 5) {
+        blendedBaseProb = 0.6 * action.baseProb + 0.4 * stat.observedSuccessRate;
+      }
+      const adjustedProb = blendedBaseProb * (0.5 + 0.5 * p);
       const expectedRecoveredRevenue = A * adjustedProb;
       const netValue = expectedRecoveredRevenue - action.cost;
       return { ...action, adjustedProb, expectedRecoveredRevenue, netValue };
     });
+
 
     // Pick the best action by netValue
     scored.sort((a, b) => b.netValue - a.netValue);

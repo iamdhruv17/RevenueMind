@@ -9,25 +9,23 @@ datasource db {
 }
 
 model Customer {
-  id                String   @id @default(cuid())
+  id                String                @id @default(cuid())
   name              String
-  email             String?  @unique
+  email             String?               @unique
   phone             String?
-  preferredLanguage String   @default("en")
-  createdAt         DateTime @default(now())
-
-  historyStats      CustomerHistoryStats?
-  transactions      Transaction[]
+  preferredLanguage String                @default("en")
+  createdAt         DateTime              @default(now())
   checkoutSessions  CheckoutSession[]
+  historyStats      CustomerHistoryStats?
+  interventions     Intervention[]
   invoices          Invoice[]
   revenueRiskEvents RevenueRiskEvent[]
-  interventions     Intervention[]
+  transactions      Transaction[]
 }
 
 model CustomerHistoryStats {
   id                      String   @id @default(cuid())
   customerId              String   @unique
-  customer                Customer @relation(fields: [customerId], references: [id])
   totalPayments           Int      @default(0)
   successfulPayments      Int      @default(0)
   failedPayments          Int      @default(0)
@@ -36,80 +34,83 @@ model CustomerHistoryStats {
   avgReminderResponseDays Float?
   recoveryPropensityScore Float?
   updatedAt               DateTime @updatedAt
+  customer                Customer @relation(fields: [customerId], references: [id])
 }
 
 model Transaction {
   id                String   @id @default(cuid())
   customerId        String
-  customer          Customer @relation(fields: [customerId], references: [id])
   amount            Float
-  status            String   // "success" | "failed" | "pending"
+  status            String
   paymentMethod     String?
-  type              String   // "one_time" | "subscription" | "mandate"
+  type              String
   failureReasonCode String?
   createdAt         DateTime @default(now())
+  customer          Customer @relation(fields: [customerId], references: [id])
 }
 
 model CheckoutSession {
   id                String   @id @default(cuid())
   customerId        String
-  customer          Customer @relation(fields: [customerId], references: [id])
   cartValue         Float
   timeOnCheckoutSec Int?
   abandoned         Boolean  @default(false)
   createdAt         DateTime @default(now())
+  customer          Customer @relation(fields: [customerId], references: [id])
 }
 
 model Invoice {
   id            String   @id @default(cuid())
   customerId    String
-  customer      Customer @relation(fields: [customerId], references: [id])
   amount        Float
   dueDate       DateTime
-  status        String   // "paid" | "overdue"
+  status        String
   lateFeeAmount Float?
   createdAt     DateTime @default(now())
+  customer      Customer @relation(fields: [customerId], references: [id])
 }
 
 model RevenueRiskEvent {
-  id           String   @id @default(cuid())
-  sourceType   String   // "transaction" | "checkout" | "invoice" | "subscription"
-  sourceId     String
-  customerId   String
-  customer     Customer @relation(fields: [customerId], references: [id])
-  amountAtRisk Float
-  detectedAt   DateTime @default(now())
-
-  rootCause     RootCauseAnalysis?
+  id            String             @id @default(cuid())
+  sourceType    String
+  sourceId      String
+  customerId    String
+  amountAtRisk  Float
+  detectedAt    DateTime           @default(now())
   interventions Intervention[]
+  customer      Customer           @relation(fields: [customerId], references: [id])
+  rootCause     RootCauseAnalysis?
 }
 
 model RootCauseAnalysis {
   id                  String           @id @default(cuid())
   revenueRiskEventId  String           @unique
-  revenueRiskEvent    RevenueRiskEvent @relation(fields: [revenueRiskEventId], references: [id])
   predictedReason     String
   confidence          Float
   purchaseIntentScore Float
   signalsUsed         Json?
-  createdAt           DateTime @default(now())
+  createdAt           DateTime         @default(now())
+  revenueRiskEvent    RevenueRiskEvent @relation(fields: [revenueRiskEventId], references: [id])
 }
 
 model Intervention {
   id                          String           @id @default(cuid())
   revenueRiskEventId          String
-  revenueRiskEvent            RevenueRiskEvent @relation(fields: [revenueRiskEventId], references: [id])
   customerId                  String
-  customer                    Customer @relation(fields: [customerId], references: [id])
-  actionType                  String   // "retry" | "reminder" | "discount" | "waiver" | "escalation" | "voice"
+  actionType                  String
   cost                        Float
   expectedRecoveryProbability Float
   expectedRecoveredRevenue    Float
   messageText                 String?
   channel                     String?
   language                    String?
-  status                      String   @default("pending")
-  createdAt                   DateTime @default(now())
+  status                      String           @default("pending")
+  createdAt                   DateTime         @default(now())
+  outcomeStatus               String           @default("pending") // "pending" | "recovered" | "not_recovered"
+  actualRecoveredAmount       Float?
+  outcomeRecordedAt           DateTime?
+  customer                    Customer         @relation(fields: [customerId], references: [id])
+  revenueRiskEvent            RevenueRiskEvent @relation(fields: [revenueRiskEventId], references: [id])
 }
 
 model AuditLog {
@@ -135,4 +136,12 @@ model BudgetAllocation {
   periodEnd      DateTime
   totalBudget    Float
   allocatedSoFar Float    @default(0)
+}
+
+model ActionPerformanceStats {
+  id                 String   @id @default(cuid())
+  actionType         String   @unique
+  observedSuccessRate Float
+  sampleSize         Int
+  updatedAt          DateTime @updatedAt
 }
