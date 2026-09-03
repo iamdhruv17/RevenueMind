@@ -1,0 +1,22 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   RevenueMind — shared design tokens
+   Referenced by both the landing page and the dashboard.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Backgrounds */
+  --rm-bg: #F7F8FA;
+  --rm-surface: #FFFFFF;
+
+  /* Typography */
+  --rm-ink: #12172B;
+  --rm-ink-muted: #565D74;
+
+  /* Borders */
+  --rm-border: #E4E7EC;
+
+  /* Accent palette */
+  --rm-accent-recover: #0F6E5C;   /* green  — recovery, approve, positive delta */
+  --rm-accent-risk: #B8622B;      /* amber  — risk amounts, violations           */
+  --rm-accent-escalate: #7A4FB5;  /* purple — escalations, primary actions       */
+}

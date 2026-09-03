@@ -1,108 +1,430 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { getDashboardSummary, getLearningGap } from "@/lib/db/queries";
+import HeroStatCard from "./_components/HeroStatCard";
 
-export default function Home() {
+// Force server-render on every request so hero numbers are always live
+export const dynamic = "force-dynamic";
+
+// ─── Hero stat card (async server sub-component, wrapped in Suspense) ─────────
+
+async function HeroStats() {
+  const [summary, gap] = await Promise.allSettled([
+    getDashboardSummary().catch(() => null),
+    getLearningGap().catch(() => null),
+  ]);
+
+  const s = summary.status === "fulfilled" ? summary.value : null;
+  const g = gap.status === "fulfilled" ? gap.value : null;
+
+  const stats = [
+    s !== null
+      ? {
+          label: "Revenue at Risk",
+          value: s.revenueAtRisk,
+          prefix: "₹",
+          color: "var(--rm-accent-risk)",
+        }
+      : null,
+    s !== null
+      ? {
+          label: "Expected Recoverable",
+          value: s.expectedRecoverable,
+          prefix: "₹",
+          color: "var(--rm-accent-recover)",
+        }
+      : null,
+    s !== null
+      ? {
+          label: "Recovery Rate",
+          value: parseFloat(s.recoveryRatePct.toFixed(1)),
+          suffix: "%",
+          decimals: 1,
+          color: "var(--rm-accent-recover)",
+        }
+      : null,
+    g !== null
+      ? {
+          label: "Prediction Gap",
+          value: parseFloat(g.toFixed(1)),
+          suffix: " pp",
+          decimals: 1,
+          color: "var(--rm-accent-escalate)",
+        }
+      : null,
+  ].filter(Boolean) as {
+    label: string;
+    value: number;
+    prefix?: string;
+    suffix?: string;
+    decimals?: number;
+    color?: string;
+  }[];
+
+  if (stats.length === 0) return null;
+
+  // Format values for display label (for screen-reader / SEO)
+  // The animated values are the actual numbers; prefix/suffix handled by HeroStatCard
+  return <HeroStatCard stats={stats} />;
+}
+
+// ─── Loop step data ───────────────────────────────────────────────────────────
+
+const LOOP_STEPS = [
+  {
+    name: "Detect",
+    desc: "Scans failed payments, abandoned checkouts, and overdue invoices for revenue at risk.",
+    color: "var(--rm-accent-risk)",
+  },
+  {
+    name: "Understand",
+    desc: "Maps observable signals — checkout duration, payment failure codes, payment history — to a likely root cause.",
+    color: "var(--rm-accent-risk)",
+  },
+  {
+    name: "Decide",
+    desc: "An economic optimizer weighs cost against expected recovery for every possible action.",
+    color: "var(--rm-ink)",
+  },
+  {
+    name: "Act",
+    desc: "Generates a personalized, multilingual message in the customer's preferred language.",
+    color: "var(--rm-accent-escalate)",
+  },
+  {
+    name: "Monitor",
+    desc: "Every decision is logged to an immutable audit trail.",
+    color: "var(--rm-ink)",
+  },
+  {
+    name: "Recover",
+    desc: "Interventions execute within hard policy limits — bounded, not unconstrained, autonomy.",
+    color: "var(--rm-accent-recover)",
+  },
+  {
+    name: "Learn",
+    desc: "Simulated outcomes are compared against predictions, and future decisions are recalibrated toward what actually happened.",
+    color: "var(--rm-accent-recover)",
+  },
+];
+
+// ─── Differentiators ──────────────────────────────────────────────────────────
+
+const DIFFERENTIATORS = [
+  {
+    title: "Batch Budget Optimization",
+    body: "Most systems decide per-customer. RevenueMind ranks every candidate intervention by ROI and spends a fixed incentive budget on only the best bets — not everyone who could technically use a discount.",
+  },
+  {
+    title: "Explainable Root Cause",
+    body: "Every reason the system assigns is grounded in an observable signal — checkout duration, payment failure code, payment history — not a black-box guess.",
+  },
+  {
+    title: "Bounded Autonomy",
+    body: "Hard policy limits on discount size, fee waivers, and contact frequency. Anything that would exceed them escalates to a human instead of being auto-approved.",
+  },
+  {
+    title: "Multilingual Personalization",
+    body: "Messages are generated per customer in English, Hindi, or Hinglish — matched to how people actually communicate, not one generic template.",
+  },
+  {
+    title: "Continuous Learning",
+    body: "Outcomes are compared against predictions, and the gap between what the system expected and what actually happened recalibrates future decisions.",
+  },
+];
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-purple-200">
-      {/* Hero Section */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-24 sm:py-32 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              <span className="block">RevenueMind</span>
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                AI Revenue Recovery Agent
-              </span>
+    <div style={{ backgroundColor: "var(--rm-bg)", color: "var(--rm-ink)" }}>
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section
+        className="border-b"
+        style={{ borderColor: "var(--rm-border)" }}
+      >
+        <div className="max-w-6xl mx-auto px-6 py-20 lg:py-28 grid lg:grid-cols-2 gap-16 items-center">
+          {/* Left */}
+          <div className="max-w-lg">
+            <p
+              className="text-xs font-sans mb-5"
+              style={{ color: "var(--rm-ink-muted)" }}
+            >
+              Razorpay Buildathon · Track 03
+            </p>
+            <h1
+              className="text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-6"
+              style={{ color: "var(--rm-ink)" }}
+            >
+              RevenueMind
             </h1>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
-              Autonomous multi-agent system that detects, diagnoses, and recovers at-risk revenue before it's lost. 
-              Reduce churn and increase cash flow with intelligent, context-aware interventions.
+            <p
+              className="text-base leading-relaxed mb-8"
+              style={{ color: "var(--rm-ink-muted)", maxWidth: "60ch" }}
+            >
+              An AI Revenue Recovery Agent that doesn't just detect failed
+              payments — it understands why revenue is slipping away, and
+              decides the most effective, economically sound way to recover it.
             </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Link
-                href="/dashboard"
-                className="rounded-lg bg-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 transition-colors"
-              >
-                Go to Command Center →
-              </Link>
-            </div>
+            <Link
+              href="/dashboard"
+              className="inline-block rounded-[6px] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: "var(--rm-accent-escalate)" }}
+            >
+              View Live Command Center
+            </Link>
+          </div>
+
+          {/* Right — live stat preview */}
+          <div>
+            <Suspense
+              fallback={
+                <div
+                  className="rounded-[6px] border p-6 h-44 animate-pulse"
+                  style={{
+                    backgroundColor: "var(--rm-surface)",
+                    borderColor: "var(--rm-border)",
+                  }}
+                />
+              }
+            >
+              <HeroStats />
+            </Suspense>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Pipeline Section */}
-      <div className="py-24 sm:py-32 max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            The Autonomous Recovery Pipeline
+      {/* ── The Loop ─────────────────────────────────────────────────────── */}
+      <section
+        className="border-b"
+        style={{ borderColor: "var(--rm-border)" }}
+      >
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <h2
+            className="text-xl font-semibold mb-2"
+            style={{ color: "var(--rm-ink)" }}
+          >
+            The Loop
           </h2>
-          <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-            RevenueMind uses a network of specialized agents to handle the entire recovery lifecycle.
+          <p
+            className="text-sm mb-12"
+            style={{ color: "var(--rm-ink-muted)" }}
+          >
+            Seven sequential steps. The system doesn't skip ahead.
           </p>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Detect & Understand */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">1. Detect & Understand</h3>
-            <p className="text-gray-600">
-              The <span className="font-semibold text-blue-600">Risk Agent</span> monitors transactions, checkouts, and invoices. 
-              The <span className="font-semibold text-blue-600">Root Cause Agent</span> analyzes failures to determine why the risk occurred.
-            </p>
-          </div>
-
-          {/* Decide */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-6">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">2. Decide</h3>
-            <p className="text-gray-600">
-              The <span className="font-semibold text-purple-600">Strategy Agent</span> determines the optimal intervention (reminders, discounts, waivers). 
-              The <span className="font-semibold text-purple-600">Guardrail Agent</span> ensures actions stay within budget and policy limits.
-            </p>
-          </div>
-
-          {/* Act & Monitor */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center mb-6">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">3. Act & Monitor</h3>
-            <p className="text-gray-600">
-              The <span className="font-semibold text-orange-600">Messaging Agent</span> generates empathetic, localized messages. 
-              The system simulates or waits for real-world outcomes.
-            </p>
-          </div>
-
-          {/* Recover & Learn */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-6">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">4. Recover & Learn</h3>
-            <p className="text-gray-600">
-              The <span className="font-semibold text-green-600">Learning Agent</span> observes actual success rates and continuously refines the system's heuristics for future interventions.
-            </p>
+          {/* Single row at lg — 7 equal columns. On smaller screens, 2-col grid. */}
+          <div className="grid grid-cols-2 lg:grid-cols-7 gap-px" style={{ backgroundColor: "var(--rm-border)" }}>
+            {LOOP_STEPS.map((step, i) => (
+              <div
+                key={step.name}
+                className="p-4"
+                style={{ backgroundColor: "var(--rm-surface)" }}
+              >
+                <div
+                  className="text-xs font-mono font-semibold mb-2"
+                  style={{ color: step.color }}
+                >
+                  {String(i + 1).padStart(2, "0")} {step.name}
+                </div>
+                <p
+                  className="text-xs leading-relaxed"
+                  style={{ color: "var(--rm-ink-muted)" }}
+                >
+                  {step.desc}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
+      </section>
 
-      </div>
+      {/* ── What makes this different ─────────────────────────────────────── */}
+      <section
+        className="border-b"
+        style={{ borderColor: "var(--rm-border)" }}
+      >
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <h2
+            className="text-xl font-semibold mb-2"
+            style={{ color: "var(--rm-ink)" }}
+          >
+            What makes this different
+          </h2>
+          <p
+            className="text-sm mb-12"
+            style={{ color: "var(--rm-ink-muted)" }}
+          >
+            Five design decisions that separate RevenueMind from a rule-based
+            playbook.
+          </p>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-12">
-        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-gray-500">
-          RevenueMind — AI Revenue Recovery Agent. Ready for production.
+          <div className="grid sm:grid-cols-2 gap-px" style={{ backgroundColor: "var(--rm-border)" }}>
+            {DIFFERENTIATORS.map((d, i) => (
+              <div
+                key={d.title}
+                className={`p-6${i === 4 ? " sm:col-span-2" : ""}`}
+                style={{ backgroundColor: "var(--rm-surface)" }}
+              >
+                <h3
+                  className="text-sm font-semibold mb-3"
+                  style={{ color: "var(--rm-ink)" }}
+                >
+                  {d.title}
+                </h3>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ color: "var(--rm-ink-muted)", maxWidth: "52ch" }}
+                >
+                  {d.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Under the hood ────────────────────────────────────────────────── */}
+      <section
+        className="border-b"
+        style={{ borderColor: "var(--rm-border)" }}
+      >
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <h2
+            className="text-xl font-semibold mb-2"
+            style={{ color: "var(--rm-ink)" }}
+          >
+            Under the hood
+          </h2>
+          <p
+            className="text-sm mb-10"
+            style={{ color: "var(--rm-ink-muted)" }}
+          >
+            For the judge who wants to know it's real.
+          </p>
+
+          <div className="grid sm:grid-cols-2 gap-6 max-w-3xl">
+            {[
+              {
+                label: "35 s → 4 s",
+                detail:
+                  "The recovery pipeline was rebuilt around a single batch query. Running interventions one-at-a-time produced a 35-second wall time; the batch rewrite brought that under 4 seconds on the same dataset.",
+              },
+              {
+                label: "Connection pooling",
+                detail:
+                  "Serverless Postgres connections are managed through a shared PrismaClient singleton — one client per process, not one per request — to avoid connection exhaustion under concurrent load.",
+              },
+              {
+                label: "Guardrail system",
+                detail:
+                  "Every proposed action is checked against hard caps: discount size, fee waiver limits, contact frequency. Anything that trips a cap is escalated to a human review queue rather than silently auto-approved.",
+              },
+              {
+                label: "LLM fallback handling",
+                detail:
+                  "The message generator wraps every LLM call in a try/catch with a plain-language fallback template. A failed API call produces a usable message, not a broken pipeline.",
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-[6px] border p-5"
+                style={{
+                  backgroundColor: "var(--rm-surface)",
+                  borderColor: "var(--rm-border)",
+                }}
+              >
+                <div
+                  className="font-mono text-sm font-semibold mb-2"
+                  style={{ color: "var(--rm-accent-escalate)" }}
+                >
+                  {item.label}
+                </div>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ color: "var(--rm-ink-muted)" }}
+                >
+                  {item.detail}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── How it works ─────────────────────────────────────────────────── */}
+      <section
+        className="border-b"
+        style={{ borderColor: "var(--rm-border)" }}
+      >
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <h2
+            className="text-xl font-semibold mb-2"
+            style={{ color: "var(--rm-ink)" }}
+          >
+            How it works
+          </h2>
+          <p
+            className="text-sm mb-10"
+            style={{ color: "var(--rm-ink-muted)" }}
+          >
+            The short version.
+          </p>
+
+          <ol className="space-y-4 max-w-xl">
+            {[
+              "We detect revenue at risk.",
+              "We figure out why.",
+              "We calculate the smartest response within a budget.",
+              "We reach out — in the right language, at the right moment.",
+            ].map((step, i) => (
+              <li key={i} className="flex gap-4 items-start">
+                <span
+                  className="font-mono text-xs font-semibold mt-0.5 w-5 shrink-0"
+                  style={{ color: "var(--rm-accent-recover)" }}
+                >
+                  {i + 1}.
+                </span>
+                <span
+                  className="text-sm leading-relaxed"
+                  style={{ color: "var(--rm-ink)" }}
+                >
+                  {step}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      <footer
+        className="border-t"
+        style={{ borderColor: "var(--rm-border)" }}
+      >
+        <div
+          className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-sm"
+          style={{ color: "var(--rm-ink-muted)" }}
+        >
+          <span>Built for the Razorpay Buildathon, Track 03.</span>
+          <div className="flex gap-6">
+            <Link
+              href="/dashboard"
+              className="hover:underline"
+              style={{ color: "var(--rm-accent-escalate)" }}
+            >
+              Command Center
+            </Link>
+            <a
+              href="https://github.com/iamdhruv17/RevenueMind"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline"
+              style={{ color: "var(--rm-ink-muted)" }}
+            >
+              GitHub
+            </a>
+          </div>
         </div>
       </footer>
     </div>

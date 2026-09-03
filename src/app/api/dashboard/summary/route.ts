@@ -1,23 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { getDashboardSummary } from '@/lib/db/queries';
 
 export async function GET() {
   try {
-    // revenueAtRisk
-    const riskEvents = await prisma.revenueRiskEvent.aggregate({
-      _sum: { amountAtRisk: true },
-      _count: { customerId: true }
-    });
-    const revenueAtRisk = riskEvents._sum.amountAtRisk || 0;
-
-    // expectedRecoverable
-    const interventionsAgg = await prisma.intervention.aggregate({
-      _sum: { expectedRecoveredRevenue: true }
-    });
-    const expectedRecoverable = interventionsAgg._sum.expectedRecoveredRevenue || 0;
-
-    // recoveryRatePct
-    const recoveryRatePct = revenueAtRisk > 0 ? (expectedRecoverable / revenueAtRisk) * 100 : 0;
+    // ── Three headline numbers — shared with the landing page hero ──────────
+    // Single source of truth: if the filter logic changes, it changes in
+    // src/lib/db/queries.ts and is immediately reflected on both pages.
+    const { revenueAtRisk, expectedRecoverable, recoveryRatePct } =
+      await getDashboardSummary();
 
     // customersAtRisk (distinct)
     const customersAtRiskGroups = await prisma.revenueRiskEvent.groupBy({
