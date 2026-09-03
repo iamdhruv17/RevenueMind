@@ -137,21 +137,78 @@ const DIFFERENTIATORS = [
 
 export default function HomePage() {
   return (
-    <div style={{ backgroundColor: "var(--rm-bg)", color: "var(--rm-ink)" }}>
+    <>
+      {/* ── Sticky navbar ───────────────────────────────────────────────── */}
+      <header
+        className="sticky top-0 z-50 border-b"
+        style={{
+          backgroundColor: "var(--rm-surface)",
+          borderColor: "var(--rm-border)",
+        }}
+      >
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-6">
+          {/* Wordmark */}
+          <span
+            className="text-sm font-semibold tracking-tight"
+            style={{ color: "var(--rm-ink)" }}
+          >
+            RevenueMind
+          </span>
+
+          {/* Anchor nav links */}
+          <nav className="hidden sm:flex items-center gap-6">
+            <a
+              href="#how-it-works"
+              className="text-sm transition-colors hover:underline"
+              style={{ color: "var(--rm-ink-muted)" }}
+            >
+              How it works
+            </a>
+            <a
+              href="#under-the-hood"
+              className="text-sm transition-colors hover:underline"
+              style={{ color: "var(--rm-ink-muted)" }}
+            >
+              Under the hood
+            </a>
+          </nav>
+
+          {/* Ghost Dashboard button */}
+          <Link
+            href="/dashboard"
+            className="text-sm rounded-[6px] px-4 py-1.5 border transition-colors hover:bg-[var(--rm-bg)]"
+            style={{
+              borderColor: "var(--rm-border)",
+              color: "var(--rm-ink)",
+            }}
+          >
+            Dashboard
+          </Link>
+        </div>
+      </header>
+
+      <div style={{ backgroundColor: "var(--rm-bg)", color: "var(--rm-ink)" }}>
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section
-        className="border-b"
+        className="border-b relative overflow-hidden"
         style={{ borderColor: "var(--rm-border)" }}
       >
+        {/* Dot-grid background texture — data/ops aesthetic, not decoration */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage:
+              "radial-gradient(circle, var(--rm-border) 1.5px, transparent 1.5px)",
+            backgroundSize: "24px 24px",
+            opacity: 0.35,
+            pointerEvents: "none",
+          }}
+        />
         <div className="max-w-6xl mx-auto px-6 py-20 lg:py-28 grid lg:grid-cols-2 gap-16 items-center">
           {/* Left */}
           <div className="max-w-lg">
-            <p
-              className="text-xs font-sans mb-5"
-              style={{ color: "var(--rm-ink-muted)" }}
-            >
-              Razorpay Buildathon · Track 03
-            </p>
             <h1
               className="text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-6"
               style={{ color: "var(--rm-ink)" }}
@@ -166,13 +223,25 @@ export default function HomePage() {
               payments — it understands why revenue is slipping away, and
               decides the most effective, economically sound way to recover it.
             </p>
-            <Link
-              href="/dashboard"
-              className="inline-block rounded-[6px] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "var(--rm-accent-escalate)" }}
-            >
-              View Live Command Center
-            </Link>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <Link
+                href="/dashboard"
+                className="inline-block rounded-[6px] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: "var(--rm-accent-escalate)" }}
+              >
+                View Live Command Center
+              </Link>
+              <a
+                href="#the-loop"
+                className="inline-flex items-center gap-1.5 text-sm transition-colors hover:underline"
+                style={{ color: "var(--rm-ink-muted)" }}
+              >
+                See how it works
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M3 5.5L7 9.5L11 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </a>
+            </div>
           </div>
 
           {/* Right — live stat preview */}
@@ -196,6 +265,7 @@ export default function HomePage() {
 
       {/* ── The Loop ─────────────────────────────────────────────────────── */}
       <section
+        id="the-loop"
         className="border-b"
         style={{ borderColor: "var(--rm-border)" }}
       >
@@ -286,6 +356,7 @@ export default function HomePage() {
 
       {/* ── Under the hood ────────────────────────────────────────────────── */}
       <section
+        id="under-the-hood"
         className="border-b"
         style={{ borderColor: "var(--rm-border)" }}
       >
@@ -354,6 +425,7 @@ export default function HomePage() {
 
       {/* ── How it works ─────────────────────────────────────────────────── */}
       <section
+        id="how-it-works"
         className="border-b"
         style={{ borderColor: "var(--rm-border)" }}
       >
@@ -428,5 +500,6 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

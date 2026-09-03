@@ -12,3 +12,12 @@ body {
   background-color: var(--rm-bg);
   color: var(--rm-ink);
 }
+
+/* Live indicator dot — slow scale+opacity pulse, used only on hero stat card */
+@keyframes rm-live-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+.rm-live-dot {
+  animation: rm-live-pulse 2s ease-in-out infinite;
+}

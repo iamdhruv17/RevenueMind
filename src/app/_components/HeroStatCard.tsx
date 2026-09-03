@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -80,7 +80,7 @@ export default function HeroStatCard({ stats }: HeroStatCardProps) {
       }}
     >
       <div
-        className='col-span-2 pb-4 border-b text-xs font-sans font-medium'
+        className='col-span-2 pb-4 border-b text-xs font-sans font-medium flex items-center gap-2'
         style={{
           borderColor: 'var(--rm-border)',
           color: 'var(--rm-ink-muted)',
@@ -88,6 +88,15 @@ export default function HeroStatCard({ stats }: HeroStatCardProps) {
           textTransform: 'uppercase',
         }}
       >
+        <span
+          className='rm-live-dot inline-block rounded-full flex-shrink-0'
+          style={{
+            width: '7px',
+            height: '7px',
+            backgroundColor: 'var(--rm-accent-recover)',
+          }}
+          aria-hidden='true'
+        />
         Live · Command Center
       </div>
       {stats.map((s) => (
