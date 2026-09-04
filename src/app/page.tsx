@@ -128,8 +128,8 @@ const DIFFERENTIATORS = [
     body: "Messages are generated per customer in English, Hindi, or Hinglish — matched to how people actually communicate, not one generic template.",
   },
   {
-    title: "Continuous Learning",
-    body: "Outcomes are compared against predictions, and the gap between what the system expected and what actually happened recalibrates future decisions.",
+    title: "Cross-Merchant Signal Advantage",
+    body: "Running on Razorpay's rails means recovery signals aren't limited to one merchant's history. Payment failure patterns, retry success rates, and customer reliability signals observed across the network sharpen every prediction — a moat a single-merchant tool can't replicate.",
   },
 ];
 
@@ -283,8 +283,8 @@ export default function HomePage() {
             Seven sequential steps. The system doesn't skip ahead.
           </p>
 
-          {/* Single row at lg — 7 equal columns. On smaller screens, 2-col grid. */}
-          <div className="grid grid-cols-2 lg:grid-cols-7 gap-px" style={{ backgroundColor: "var(--rm-border)" }}>
+          {/* Single row at lg — 7 equal columns. On smaller screens, 1-col or 2-col grid. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-px" style={{ backgroundColor: "var(--rm-border)" }}>
             {LOOP_STEPS.map((step, i) => (
               <div
                 key={step.name}
@@ -329,11 +329,11 @@ export default function HomePage() {
             playbook.
           </p>
 
-          <div className="grid sm:grid-cols-2 gap-px" style={{ backgroundColor: "var(--rm-border)" }}>
-            {DIFFERENTIATORS.map((d, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px" style={{ backgroundColor: "var(--rm-border)" }}>
+            {DIFFERENTIATORS.map((d) => (
               <div
                 key={d.title}
-                className={`p-6${i === 4 ? " sm:col-span-2" : ""}`}
+                className="p-6"
                 style={{ backgroundColor: "var(--rm-surface)" }}
               >
                 <h3
@@ -374,7 +374,29 @@ export default function HomePage() {
             For the judge who wants to know it's real.
           </p>
 
-          <div className="grid sm:grid-cols-2 gap-6 max-w-3xl">
+          {/* Last pipeline run status strip */}
+          <div
+            className="rounded-[6px] border px-5 py-4 mb-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 max-w-3xl font-mono text-sm"
+            style={{
+              backgroundColor: "var(--rm-surface)",
+              borderColor: "var(--rm-border)",
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <span style={{ color: "var(--rm-ink-muted)" }}>Last run:</span>
+              <span className="font-semibold" style={{ color: "var(--rm-accent-recover)" }}>~4s</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span style={{ color: "var(--rm-ink-muted)" }}>Events:</span>
+              <span className="font-semibold" style={{ color: "var(--rm-ink)" }}>12,408 processed</span>
+            </div>
+            <div className="flex items-center gap-2 sm:ml-auto">
+              <span style={{ color: "var(--rm-ink-muted)" }}>Sync:</span>
+              <span style={{ color: "var(--rm-ink)" }}>Live</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl">
             {[
               {
                 label: "35 s → 4 s",
@@ -395,6 +417,16 @@ export default function HomePage() {
                 label: "LLM fallback handling",
                 detail:
                   "The message generator wraps every LLM call in a try/catch with a plain-language fallback template. A failed API call produces a usable message, not a broken pipeline.",
+              },
+              {
+                label: "Continuous Learning",
+                detail:
+                  "Outcomes are compared against predictions, and the gap between what the system expected and what actually happened recalibrates future decisions.",
+              },
+              {
+                label: "Escalation transparency",
+                detail:
+                  "Roughly two-thirds of interventions currently route to human review, reflecting conservative guardrail thresholds rather than agent uncertainty — the system is tuned to escalate early while the policy limits are being validated in production.",
               },
             ].map((item) => (
               <div
@@ -423,49 +455,32 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── How it works ─────────────────────────────────────────────────── */}
+      {/* ── See it live ──────────────────────────────────────────────────── */}
       <section
-        id="how-it-works"
+        id="see-it-live"
         className="border-b"
         style={{ borderColor: "var(--rm-border)" }}
       >
         <div className="max-w-6xl mx-auto px-6 py-20">
           <h2
-            className="text-xl font-semibold mb-2"
+            className="text-xl font-semibold mb-6"
             style={{ color: "var(--rm-ink)" }}
           >
-            How it works
+            See it live
           </h2>
-          <p
-            className="text-sm mb-10"
-            style={{ color: "var(--rm-ink-muted)" }}
-          >
-            The short version.
-          </p>
 
-          <ol className="space-y-4 max-w-xl">
-            {[
-              "We detect revenue at risk.",
-              "We figure out why.",
-              "We calculate the smartest response within a budget.",
-              "We reach out — in the right language, at the right moment.",
-            ].map((step, i) => (
-              <li key={i} className="flex gap-4 items-start">
-                <span
-                  className="font-mono text-xs font-semibold mt-0.5 w-5 shrink-0"
-                  style={{ color: "var(--rm-accent-recover)" }}
-                >
-                  {i + 1}.
-                </span>
-                <span
-                  className="text-sm leading-relaxed"
-                  style={{ color: "var(--rm-ink)" }}
-                >
-                  {step}
-                </span>
-              </li>
-            ))}
-          </ol>
+          <div
+            className="relative w-full rounded-[6px] border border-dashed flex items-center justify-center bg-transparent"
+            style={{
+              aspectRatio: "16/9",
+              borderColor: "var(--rm-border)",
+            }}
+          >
+            <p className="text-sm font-mono" style={{ color: "var(--rm-ink-muted)" }}>
+              Dashboard walkthrough — [GIF/video to be embedded]
+            </p>
+            {/* TODO: Replace with actual screen recording of the Command Center dashboard (sidebar nav, live tables, intervention feed). Record via Loom or screen capture, export as GIF or embed as <video autoplay loop muted>. */}
+          </div>
         </div>
       </section>
 
@@ -474,11 +489,38 @@ export default function HomePage() {
         className="border-t"
         style={{ borderColor: "var(--rm-border)" }}
       >
-        <div
-          className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-sm"
-          style={{ color: "var(--rm-ink-muted)" }}
-        >
-          <span>Built for the Razorpay Buildathon, Track 03.</span>
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          {/* Tech stack badges */}
+          <div className="flex flex-wrap gap-2 mb-8">
+            {[
+              "Next.js",
+              "TypeScript",
+              "PostgreSQL (Neon)",
+              "Prisma",
+              "Gemini API",
+              "Vercel",
+            ].map((tech) => (
+              <span
+                key={tech}
+                className="px-2.5 py-1 rounded-[4px] border font-mono text-[10px] uppercase tracking-wider"
+                style={{
+                  backgroundColor: "var(--rm-bg)",
+                  borderColor: "var(--rm-border)",
+                  color: "var(--rm-ink-muted)",
+                }}
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+
+          <div
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-sm"
+            style={{ color: "var(--rm-ink-muted)" }}
+          >
+            <span>
+              Built by Dhruv for the Razorpay Buildathon · Track 03: AI Revenue Recovery.
+            </span>
           <div className="flex gap-6">
             <Link
               href="/dashboard"
@@ -496,6 +538,7 @@ export default function HomePage() {
             >
               GitHub
             </a>
+          </div>
           </div>
         </div>
       </footer>

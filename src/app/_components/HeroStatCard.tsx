@@ -66,6 +66,14 @@ function AnimatedStat({ stat }: { stat: StatItem }) {
       >
         {stat.label}
       </div>
+      {stat.label === "Prediction Gap" && (
+        <div
+          className='text-[10px] mt-0.5 font-sans'
+          style={{ color: 'var(--rm-ink-muted)' }}
+        >
+          predicted vs. actual recovery rate
+        </div>
+      )}
     </div>
   );
 }
