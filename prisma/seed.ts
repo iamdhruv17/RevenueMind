@@ -258,7 +258,7 @@ async function main() {
     `  ✓ Created ${INVOICE_COUNT} invoices (${overdueCount} overdue, ${paidCount} paid)`
   );
 
-  // ── 7. Create PolicyRule rows ──────────────────────────────────────────────
+  // ── 7. Create policy rules ──────────────────────────────────────────────
   const policyRules = [
     {
       ruleName: 'max_discount_pct',
@@ -267,7 +267,7 @@ async function main() {
     },
     {
       ruleName: 'max_waiver_pct',
-      maxValue: 100,
+      maxValue: 50,
       description: 'Maximum late fee % that can be waived',
     },
     {
@@ -284,34 +284,24 @@ async function main() {
       create: rule,
     });
   }
-  console.log(`  ✓ Upserted ${policyRules.length} policy rules`);
+  console.log(`  ✓ Created ${policyRules.length} policy rules`);
 
-  // ── 8. Create BudgetAllocation row for current month ──────────────────────
+  // ── 8. Create budget allocation ─────────────────────────────────────────
   const now = new Date();
   const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  const monthName = now.toLocaleString('en-IN', { month: 'long' });
+  const year = now.getFullYear();
 
-  // Check if one already exists for this period
-  const existing = await prisma.budgetAllocation.findFirst({
-    where: {
-      periodStart: { lte: now },
-      periodEnd: { gte: now },
+  await prisma.budgetAllocation.create({
+    data: {
+      periodStart,
+      periodEnd,
+      totalBudget: 50000,
+      allocatedSoFar: 0,
     },
   });
-
-  if (!existing) {
-    await prisma.budgetAllocation.create({
-      data: {
-        periodStart,
-        periodEnd,
-        totalBudget: 50000,
-        allocatedSoFar: 0,
-      },
-    });
-    console.log(`  ✓ Created BudgetAllocation for current month`);
-  } else {
-    console.log(`  ✓ BudgetAllocation already exists for current month`);
-  }
+  console.log(`  ✓ Created budget allocation: ₹50,000 for ${monthName} ${year}`);
 
   // ── Summary ───────────────────────────────────────────────────────────────
   const counts = {
@@ -320,6 +310,8 @@ async function main() {
     transactions: await prisma.transaction.count(),
     checkoutSessions: await prisma.checkoutSession.count(),
     invoices: await prisma.invoice.count(),
+    policyRules: await prisma.policyRule.count(),
+    budgetAllocation: await prisma.budgetAllocation.count(),
   };
 
   console.log('\n📊 Seed complete! Row counts:');
@@ -329,6 +321,8 @@ async function main() {
   console.log(`  │ Transaction             │ ${String(counts.transactions).padStart(5)} │`);
   console.log(`  │ CheckoutSession         │ ${String(counts.checkoutSessions).padStart(5)} │`);
   console.log(`  │ Invoice                 │ ${String(counts.invoices).padStart(5)} │`);
+  console.log(`  │ PolicyRule              │ ${String(counts.policyRules).padStart(5)} │`);
+  console.log(`  │ BudgetAllocation        │ ${String(counts.budgetAllocation).padStart(5)} │`);
   console.log('  └─────────────────────────┴───────┘');
 }
 
