@@ -48,7 +48,7 @@ function AnimatedStat({ stat }: { stat: StatItem }) {
   const formatted =
     stat.decimals && stat.decimals > 0
       ? value.toFixed(stat.decimals)
-      : new Intl.NumberFormat('en-IN').format(value);
+      : new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(value);
 
   return (
     <div>

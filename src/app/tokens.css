@@ -7,16 +7,23 @@
   /* Backgrounds */
   --rm-bg: #F7F8FA;
   --rm-surface: #FFFFFF;
+  --rm-paper: #F7F6F3;    /* warm off-white background */
 
   /* Typography */
-  --rm-ink: #12172B;
+  --rm-ink: #14171C;      /* primary text / dark surfaces */
   --rm-ink-muted: #565D74;
 
   /* Borders */
-  --rm-border: #E4E7EC;
+  --rm-line: #DDD9D0;     /* hairline borders/dividers */
 
   /* Accent palette */
-  --rm-accent-recover: #0F6E5C;   /* green  — recovery, approve, positive delta */
-  --rm-accent-risk: #B8622B;      /* amber  — risk amounts, violations           */
-  --rm-accent-escalate: #7A4FB5;  /* purple — escalations, primary actions       */
+  --rm-signal: #1F6F4A;   /* recovered / success — use sparingly */
+  --rm-risk: #B5482E;     /* at-risk — muted, not alarm red */
+  --rm-accent: #7A4FB5;   /* interactive elements, purple/violet */
+
+  /* Legacy dashboard aliases (do not remove unless fixing all usages) */
+  --rm-border: var(--rm-line);
+  --rm-accent-recover: var(--rm-signal);
+  --rm-accent-risk: var(--rm-risk);
+  --rm-accent-escalate: var(--rm-accent);
 }

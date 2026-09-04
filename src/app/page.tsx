@@ -131,6 +131,10 @@ const DIFFERENTIATORS = [
     title: "Cross-Merchant Signal Advantage",
     body: "Running on Razorpay's rails means recovery signals aren't limited to one merchant's history. Payment failure patterns, retry success rates, and customer reliability signals observed across the network sharpen every prediction — a moat a single-merchant tool can't replicate.",
   },
+  {
+    title: "Fast In-Database Propensity Scoring",
+    body: "Recovery propensity isn't evaluated by fetching rows into memory and looping over them. The Customer Behavior Agent compiles its multi-variable scoring formula into a single raw SQL update, scoring thousands of profiles entirely within Postgres.",
+  },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -283,12 +287,12 @@ export default function HomePage() {
             Seven sequential steps. The system doesn't skip ahead.
           </p>
 
-          {/* Single row at lg — 7 equal columns. On smaller screens, 1-col or 2-col grid. */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-px" style={{ backgroundColor: "var(--rm-border)" }}>
+          {/* Single row at lg — 7 equal columns. On smaller screens, horizontally scrollable row. */}
+          <div className="flex overflow-x-auto pb-4 lg:pb-0 hide-scrollbar snap-x lg:grid lg:grid-cols-7 gap-px" style={{ backgroundColor: "var(--rm-border)" }}>
             {LOOP_STEPS.map((step, i) => (
               <div
                 key={step.name}
-                className="p-4"
+                className="p-4 min-w-[240px] lg:min-w-0 snap-start shrink-0"
                 style={{ backgroundColor: "var(--rm-surface)" }}
               >
                 <div
@@ -470,16 +474,20 @@ export default function HomePage() {
           </h2>
 
           <div
-            className="relative w-full rounded-[6px] border border-dashed flex items-center justify-center bg-transparent"
+            className="relative w-full rounded-[6px] border flex items-center justify-center bg-transparent overflow-hidden shadow-sm hover:shadow transition-shadow"
             style={{
-              aspectRatio: "16/9",
+              aspectRatio: "1440/900",
               borderColor: "var(--rm-border)",
             }}
           >
-            <p className="text-sm font-mono" style={{ color: "var(--rm-ink-muted)" }}>
-              Dashboard walkthrough — [GIF/video to be embedded]
-            </p>
-            {/* TODO: Replace with actual screen recording of the Command Center dashboard (sidebar nav, live tables, intervention feed). Record via Loom or screen capture, export as GIF or embed as <video autoplay loop muted>. */}
+            <Link href="/dashboard" className="block w-full h-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src="/dashboard-screenshot.png" 
+                alt="Dashboard walkthrough" 
+                className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity" 
+              />
+            </Link>
           </div>
         </div>
       </section>
